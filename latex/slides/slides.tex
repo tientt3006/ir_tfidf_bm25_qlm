@@ -1,24 +1,106 @@
-\documentclass[11pt,aspectratio=169]{beamer}
+\documentclass[aspectratio=169,11pt]{beamer}
 
-% --- Packages ---
-\usepackage[utf8]{inputenc}
-\usepackage[vietnamese]{babel}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{amsmath}
-\usepackage{hyperref}
-
-% --- Theme ---
+% ─── Theme & Color ───────────────────────────────────────────────────────────
 \usetheme{Madrid}
 \usecolortheme{whale}
+
+% Override palette colours for a richer look
+\definecolor{ptitblue}{HTML}{003087}      % PTIT dark blue
+\definecolor{ptitmid}{HTML}{1565C0}       % medium blue
+\definecolor{ptitlight}{HTML}{E3F2FD}     % very light blue bg
+\definecolor{accentorange}{HTML}{E65100}  % deep orange accent
+\definecolor{accentteal}{HTML}{00695C}    % teal for positive
+\definecolor{accentpurple}{HTML}{4527A0} % purple accent
+\definecolor{warnred}{HTML}{B71C1C}       % warning red
+\definecolor{gridbg}{HTML}{F5F5F5}        % light grey bg for tables
+\definecolor{nrmsblue}{HTML}{1565C0}
+\definecolor{nraglsorange}{HTML}{E65100}
+
+\setbeamercolor{palette primary}{bg=ptitblue, fg=white}
+\setbeamercolor{palette secondary}{bg=ptitmid, fg=white}
+\setbeamercolor{palette tertiary}{bg=ptitblue, fg=white}
+\setbeamercolor{palette quaternary}{bg=ptitblue, fg=white}
+\setbeamercolor{structure}{fg=ptitblue}
+\setbeamercolor{frametitle}{bg=ptitblue, fg=white}
+\setbeamercolor{title}{bg=ptitblue, fg=white}
+\setbeamercolor{block title}{bg=ptitmid, fg=white}
+\setbeamercolor{block body}{bg=ptitlight}
+\setbeamercolor{block title alerted}{bg=accentorange, fg=white}
+\setbeamercolor{block body alerted}{bg=orange!8}
+\setbeamercolor{block title example}{bg=accentteal, fg=white}
+\setbeamercolor{block body example}{bg=teal!5}
+\setbeamercolor{item projected}{bg=ptitblue, fg=white}
+\setbeamercolor{section in toc}{fg=ptitblue}
+\setbeamercolor{subsection in toc}{fg=ptitmid}
+
+\setbeamertemplate{blocks}[rounded][shadow=true]
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{footline}[frame number]
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+\setbeamerfont{frametitle}{series=\bfseries}
+\usefonttheme[onlymath]{serif}
 
-% --- Title ---
-\title{Hệ thống Information Retrieval trên Cranfield}
-\subtitle{Đánh giá và so sánh các mô hình xếp hạng}
-\author{Sinh viên}
-\date{\today}
+% ─── Packages ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{marvosym}  % for icons
+
+% ─── Custom boxes ────────────────────────────────────────────────────────────
+\newtcolorbox{keybox}[1][]{
+  enhanced, colback=ptitlight, colframe=ptitblue,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+\newtcolorbox{warnbox}[1][]{
+  enhanced, colback=orange!8, colframe=accentorange,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+\newtcolorbox{goodbox}[1][]{
+  enhanced, colback=teal!5, colframe=accentteal,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+
+% ─── Meta-data ───────────────────────────────────────────────────────────────
+\title[Báo cáo bài tập lớn - Information retrieval]{Báo cáo bài tập lớn bộ môn Information retrieval}
+\subtitle{Khảo sát hệ thống truy xuất thông tin trên tập dữ liệu Cranfield\\ sử dụng TF-IDF, BM25, QLM.}
+\author[Nhóm 09 - IR]{%
+  \textbf{Nhóm lớp: 02}\\[0.8em]
+  \textbf{Nhóm sinh viên thực hiện: 09}\\[0.8em]
+  Ngô Việt Anh \hfill (MSV: B22DCKH004)\\[0.3em]
+  Nguyễn Đình Tiến \hfill (MSV: B22DCKH108)\\[1.2em]
+  \textbf{Giảng viên hướng dẫn:} Phạm Đức Cường}
+\institute[PTIT]{Khoa CNTT1 --- Học viện Công nghệ Bưu chính Viễn thông (PTIT)}
+\date{Tháng 5, 2026}
+
+% ─── Helper command ──────────────────────────────────────────────────────────
+\newcommand{\hl}[1]{\textcolor{accentorange}{\textbf{#1}}}
+\newcommand{\ok}{\textcolor{accentteal}{$\checkmark$}}
+\newcommand{\bad}{\textcolor{warnred}{$\times$}}
+\newcommand{\faQuestionCircle}{{\color{ptitmid}\textbf{?}}}
+\newcommand{\faDatabase}{{\color{ptitmid}\textbf{DB}}}
+\newcommand{\faExclamationTriangle}{{\color{accentorange}\textbf{!}}}
+\newcommand{\faLightbulb}{{\color{accentorange}\textbf{*}}}
+\newcommand{\faCheckCircle}{$\checkmark$}
+\newcommand{\faTimesCircle}{$\times$}
+\newcommand{\faMinusCircle}{$\circ$}
+\newcommand{\faEnvelope}{@}
+\newcommand{\faUniversity}{\textbf{U}}
 
 \begin{document}
 
@@ -33,41 +115,85 @@
     \item Xây dựng hệ thống tìm kiếm thông tin hoàn chỉnh trên bộ dữ liệu Cranfield (1400 tài liệu, 225 truy vấn).
     \item Cài đặt 4 mô hình xếp hạng: TF-IDF, BM25, QLM Jelinek-Mercer, QLM Dirichlet.
     \item Tích hợp module sửa lỗi chính tả dựa trên K-gram index và khoảng cách Levenshtein.
-    \item Đánh giá hiệu suất bằng các metric tiêu chuẩn (MAP, MRR, P@K, R@K, F1@K) và tinh chỉnh siêu tham số bằng Grid Search.
+    \item Đánh giá hiệu suất bằng các metric tiêu chuẩn (MAP, MRR, P@K, R@K, F1@K).
 \end{itemize}
 \end{frame}
 
-% ===== SLIDE 3: Kiến trúc hệ thống =====
-\begin{frame}{Kiến trúc hệ thống}
+% ===== SLIDE 3: Kiến trúc hệ thống & Luồng hoạt động =====
+\begin{frame}{Kiến trúc hệ thống & Luồng hoạt động (Data Flow)}
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm and 1.0cm,
+    box/.style={draw=ptitblue, fill=ptitlight, rectangle, rounded corners, text width=2.8cm, align=center, minimum height=0.8cm, font=\small\bfseries, line width=1pt},
+    db/.style={draw=ptitmid, fill=gridbg, cylinder, shape border rotate=90, text width=2.0cm, align=center, minimum height=0.9cm, font=\small\bfseries, line width=1pt},
+    arrow/.style={-Latex[scale=1.2], line width=1.2pt, ptitblue}
+]
+    % Row 1: Offline indexing
+    \node[db] (dataset) {Cranfield Dataset};
+    \node[box, right=of dataset] (preprocess) {Tiền xử lý văn bản\\(Stemming, Stopwords)};
+    \node[box, right=of preprocess] (indexer) {Xây dựng chỉ mục\\(Inverted \& K-gram)};
+    
+    % Row 2: Online query
+    \node[box, below=1.0cm of preprocess] (spell) {Sửa lỗi chính tả\\(K-gram \& Levenshtein)};
+    \node[box, right=of spell] (ranking) {Mô hình xếp hạng\\(TF-IDF, BM25, QLM)};
+    \node[box, left=of spell] (ui) {Giao diện tìm kiếm\\(Streamlit UI)};
+
+    % Connections
+    \draw[arrow] (dataset) -- (preprocess);
+    \draw[arrow] (preprocess) -- (indexer);
+    \draw[arrow] (ui) -- (spell);
+    \draw[arrow] (spell) -- (ranking);
+    \draw[arrow] (indexer) -- (ranking);
+    \draw[arrow] (ranking) |- ($(ui.south) - (0,0.4)$) -- (ui.south);
+\end{tikzpicture}
+\end{frame}
+
+% ===== SLIDE 3b: Quy trình xử lý lỗi chính tả =====
+\begin{frame}{Quy trình chi tiết: Sửa lỗi chính tả (Spell Correction)}
 \begin{columns}
-\begin{column}{0.55\textwidth}
-    \begin{itemize}
-        \item \textbf{Backend (Python thuần)}:
+\begin{column}{0.48\textwidth}
+    \begin{block}{1. Nhận diện lỗi & Tìm ứng viên}
         \begin{itemize}
-            \item \texttt{indexer.py}: Tiền xử lý, chỉ mục ngược, K-gram index
-            \item \texttt{models.py}: 4 mô hình xếp hạng
-            \item \texttt{spellcheck.py}: Sửa lỗi chính tả
-            \item \texttt{metrics.py}: Hàm đánh giá
+            \item Các từ trong câu truy vấn từ \hl{Streamlit UI} được kiểm tra sự tồn tại trong từ điển (Vocabulary).
+            \item Nếu không có, từ đó bị coi là viết sai chính tả.
+            \item Từ lỗi được phân rã thành các \hl{bigram} (k-gram với $k=2$).
+            \item Tìm các từ trong từ điển chia sẻ chung bigram qua \hl{K-gram Index}.
         \end{itemize}
-        \item \textbf{Frontend}: Streamlit (\texttt{app.py})
-        \item \textbf{Notebooks}: Đánh giá và tinh chỉnh
-    \end{itemize}
+    \end{block}
 \end{column}
-\begin{column}{0.4\textwidth}
-    \small
-    \begin{tabular}{l}
-    \texttt{ir\_prj/} \\
-    \quad \texttt{core/} \\
-    \quad\quad \texttt{indexer.py} \\
-    \quad\quad \texttt{models.py} \\
-    \quad\quad \texttt{spellcheck.py} \\
-    \quad\quad \texttt{metrics.py} \\
-    \quad \texttt{notebooks/} \\
-    \quad \texttt{results/} \\
-    \quad \texttt{app.py} \\
-    \end{tabular}
+\begin{column}{0.48\textwidth}
+    \begin{block}{2. Tính Jaccard & Khoảng cách Levenshtein}
+        \begin{itemize}
+            \item Lọc nhanh ứng viên thông qua hệ số tương đồng Jaccard.
+            \item Với các ứng viên tốt nhất, tính \hl{Edit Distance (Levenshtein)}.
+            \item Chọn từ có khoảng cách sửa đổi nhỏ nhất (ngưỡng tối đa là 2).
+            \item Thay thế từ sai bằng từ đúng và gửi tới bộ truy xuất.
+        \end{itemize}
+    \end{block}
 \end{column}
 \end{columns}
+\end{frame}
+
+% ===== SLIDE 3c: Quy trình tinh chỉnh & Đánh giá =====
+\begin{frame}{Quy trình tinh chỉnh siêu tham số (Hyperparameter Tuning)}
+\begin{center}
+\begin{tikzpicture}[
+    node distance=0.8cm,
+    box/.style={draw=ptitblue, fill=ptitlight, rectangle, rounded corners, text width=5.5cm, align=center, minimum height=0.6cm, font=\small\bfseries, line width=1pt},
+    arrow/.style={-Latex[scale=1.2], line width=1.2pt, ptitblue}
+]
+    \node[box] (step1) {Chạy Grid Search trên không gian siêu tham số của mô hình};
+    \node[box, below=of step1] (step2) {Truy xuất Top 100 tài liệu trên 225 truy vấn kiểm thử};
+    \node[box, below=of step2] (step3) {Tính toán các độ đo Precision, Recall, MAP, MRR tại K=10};
+    \node[box, below=of step3] (step4) {Chọn bộ tham số tối ưu (MAP cao nhất) lưu vào best\_params.json};
+    \node[box, below=of step4] (step5) {Streamlit tự động tải tham số tối ưu để chạy demo};
+
+    \draw[arrow] (step1) -- (step2);
+    \draw[arrow] (step2) -- (step3);
+    \draw[arrow] (step3) -- (step4);
+    \draw[arrow] (step4) -- (step5);
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
 % ===== SLIDE 4: Pipeline tiền xử lý =====
@@ -100,6 +226,358 @@ QLM (Dirichlet)  & 0.2991 & 0.4359 & 0.3287 & 0.4064 & 0.8075 \\
 \end{tabular}
 \caption{Kết quả với tham số tối ưu ($K=10$). BM25: $k_1\!=\!2.0, b\!=\!0.75$; QLM-JM: $\lambda\!=\!0.3$; QLM-Dir: $\mu\!=\!250$.}
 \end{table}
+\begin{keybox}[Nhận xét kết quả tối ưu]
+    \begin{itemize}
+        \item \hl{BM25} đạt hiệu suất tốt nhất trên mọi chỉ số (MAP = 0.4330, MRR = 0.8292).
+        \item Hai mô hình ngôn ngữ \hl{QLM} có MAP tương đương (~0.406), thấp hơn BM25. Nguyên nhân do các tài liệu Cranfield tương đối ngắn nên QLM khó ước lượng chính xác phân bố xác suất từ.
+    \end{itemize}
+\end{keybox}
+\end{frame}
+
+% ===== SLIDE 6: So sánh mô hình =====
+\begin{frame}{So sánh hiệu suất các mô hình}
+\begin{columns}
+\begin{column}{0.65\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/model_comparison_optimal.png}
+\end{column}
+\begin{column}{0.32\textwidth}
+    \begin{goodbox}[Nhận xét biểu đồ]
+        \small
+        \begin{itemize}
+            \item BM25 vượt trội hẳn ở Precision và F1-score tại các mức K khác nhau.
+            \item TF-IDF bám đuổi sát nút và có xu hướng ổn định tương đương với QLM.
+        \end{itemize}
+    \end{goodbox}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ===== SLIDE 7: Hyperparameter Tuning --- BM25 =====
+\begin{frame}{Tinh chỉnh siêu tham số --- BM25}
+Grid Search trên $k_1 \in \{0.5, 0.75, 1.0, 1.2, 1.5, 2.0\}$ và $b \in \{0.25, 0.5, 0.75, 1.0\}$.
+\begin{columns}
+\begin{column}{0.55\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/bm25_heatmap.png}
+\end{column}
+\begin{column}{0.42\textwidth}
+    \begin{keybox}[Phân tích tác động tham số]
+        \small
+        \begin{itemize}
+            \item \hl{Tham số b (length normalization)}: Đóng vai trò cực kỳ quan trọng. Khi $b \to 0$ (không chuẩn hóa độ dài), hiệu suất giảm rõ rệt. Giá trị tối ưu là $b = 0.75$.
+            \item \hl{Tham số $k_1$ (TF saturation)}: Ổn định nhất ở các mức giá trị lớn ($k_1 = 2.0$).
+        \end{itemize}
+    \end{keybox}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ===== SLIDE 8: Hyperparameter Tuning --- QLM =====
+\begin{frame}{Tinh chỉnh siêu tham số --- QLM}
+\begin{columns}
+\begin{column}{0.35\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/qlm_jm_lambda.png}
+    \small $\lambda$ tối ưu tại $0.3$ (Jelinek-Mercer)
+\end{column}
+\begin{column}{0.35\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/qlm_dirichlet_mu.png}
+    \small $\mu$ tối ưu tại $250$ (Dirichlet)
+\end{column}
+\begin{column}{0.28\textwidth}
+    \begin{goodbox}[Nhận xét làm trơn]
+        \scriptsize
+        \begin{itemize}
+            \item \hl{QLM-JM:} $\lambda = 0.3$ tối ưu cho thấy cần dựa nhiều vào xác suất toàn tập (collection) để bù đắp các từ thiếu trong tài liệu ngắn.
+            \item \hl{QLM-Dirichlet:} $\mu = 250$ (giá trị tương đối nhỏ) phù hợp với chiều dài tài liệu trung bình ngắn của Cranfield (~103 tokens).
+        \end{itemize}
+    \end{goodbox}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ===== SLIDE 9: Tolerant Retrieval =====
+\begin{frame}{Tolerant Retrieval --- Sửa lỗi chính tả}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/tolerant_comparison.png}
+\end{column}
+\begin{column}{0.48\textwidth}
+    \begin{warnbox}[Nhận xét khả năng sửa lỗi]
+        \small
+        \begin{itemize}
+            \item Khi truy vấn bị viết sai mà \hl{không sửa}, hiệu suất MAP giảm mạnh từ **0.3277** xuống **0.2704** (giảm khoảng 17.5\%).
+            \item Khi \hl{bật sửa lỗi}, MAP khôi phục lại hầu như hoàn toàn về mức **0.3265** (chỉ lệch 0.0012 so với truy vấn gốc).
+            \item Chỉ số MRR khôi phục hoàn toàn về mức **0.7125**.
+        \end{itemize}
+    \end{warnbox}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ===== SLIDE 10: Tolerant Retrieval --- Per Query =====
+\begin{frame}{Tolerant Retrieval --- Phân tích theo từng truy vấn}
+\begin{columns}
+\begin{column}{0.65\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/tolerant_per_query.png}
+\end{column}
+\begin{column}{0.32\textwidth}
+    \begin{keybox}[Nhận xét chi tiết]
+        \small
+        \begin{itemize}
+            \item Đa phần các truy vấn bị lỗi chính tả đều được sửa hoàn hảo về từ chuẩn (ví dụ: \texttt{aerodinamics} $\to$ \texttt{aerodynamic}).
+            \item Giúp khôi phục hoàn toàn điểm số AP trên từng truy vấn.
+        \end{itemize}
+    \end{keybox}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ===== SLIDE 11: Nhận xét =====
+\begin{frame}{Nhận xét chung}
+\begin{itemize}
+    \item Các mô hình xác suất (BM25, QLM) cho kết quả vượt trội so với TF-IDF cơ bản.
+    \item Tinh chỉnh siêu tham số cải thiện đáng kể hiệu suất, đặc biệt ở BM25.
+    \item Module sửa lỗi chính tả giúp khôi phục phần lớn hiệu suất khi truy vấn bị viết sai.
+    \item QLM cho kết quả hơi thấp hơn so với BM25 có thể do tập dữ liệu với văn bản chưa đủ dài.
+\end{itemize}
+\end{frame}
+
+% ===== SLIDE 12: Kết luận =====
+\begin{frame}{Kết luận}
+\begin{itemize}
+    \item Đã xây dựng thành công hệ thống IR hoàn chỉnh với 4 mô hình xếp hạng tự xây dựng.
+    \item Hệ thống có khả năng sửa lỗi chính tả và giao diện tìm kiếm trực quan.
+    \item Các metric đánh giá được xây dựng từ đầu.
+    \item Kết quả tinh chỉnh siêu tham số được áp dụng trực tiếp vào giao diện demo.
+\end{itemize}
+\end{frame}
+
+\end{document}
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% ─── Theme & Color ───────────────────────────────────────────────────────────
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+% Override palette colours for a richer look
+\definecolor{ptitblue}{HTML}{003087}      % PTIT dark blue
+\definecolor{ptitmid}{HTML}{1565C0}       % medium blue
+\definecolor{ptitlight}{HTML}{E3F2FD}     % very light blue bg
+\definecolor{accentorange}{HTML}{E65100}  % deep orange accent
+\definecolor{accentteal}{HTML}{00695C}    % teal for positive
+\definecolor{accentpurple}{HTML}{4527A0} % purple accent
+\definecolor{warnred}{HTML}{B71C1C}       % warning red
+\definecolor{gridbg}{HTML}{F5F5F5}        % light grey bg for tables
+\definecolor{nrmsblue}{HTML}{1565C0}
+\definecolor{nraglsorange}{HTML}{E65100}
+
+\setbeamercolor{palette primary}{bg=ptitblue, fg=white}
+\setbeamercolor{palette secondary}{bg=ptitmid, fg=white}
+\setbeamercolor{palette tertiary}{bg=ptitblue, fg=white}
+\setbeamercolor{palette quaternary}{bg=ptitblue, fg=white}
+\setbeamercolor{structure}{fg=ptitblue}
+\setbeamercolor{frametitle}{bg=ptitblue, fg=white}
+\setbeamercolor{title}{bg=ptitblue, fg=white}
+\setbeamercolor{block title}{bg=ptitmid, fg=white}
+\setbeamercolor{block body}{bg=ptitlight}
+\setbeamercolor{block title alerted}{bg=accentorange, fg=white}
+\setbeamercolor{block body alerted}{bg=orange!8}
+\setbeamercolor{block title example}{bg=accentteal, fg=white}
+\setbeamercolor{block body example}{bg=teal!5}
+\setbeamercolor{item projected}{bg=ptitblue, fg=white}
+\setbeamercolor{section in toc}{fg=ptitblue}
+\setbeamercolor{subsection in toc}{fg=ptitmid}
+
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamertemplate{navigation symbols}{}
+% \setbeamertemplate{footline}[frame number]
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+\setbeamerfont{frametitle}{series=\bfseries}
+\usefonttheme[onlymath]{serif}
+
+% ─── Packages ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{marvosym}  % for icons
+
+% ─── Custom boxes ────────────────────────────────────────────────────────────
+\newtcolorbox{keybox}[1][]{
+  enhanced, colback=ptitlight, colframe=ptitblue,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+\newtcolorbox{warnbox}[1][]{
+  enhanced, colback=orange!8, colframe=accentorange,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+\newtcolorbox{goodbox}[1][]{
+  enhanced, colback=teal!5, colframe=accentteal,
+  boxrule=1.5pt, arc=4pt, left=4pt, right=4pt, top=3pt, bottom=3pt,
+  fonttitle=\bfseries\small, #1
+}
+
+% ─── Meta-data ───────────────────────────────────────────────────────────────
+\title[Báo cáo bài tập lớn - Information retrieval]{Báo cáo bài tập lớn bộ môn Information retrieval}
+\subtitle{Khảo sát hệ thống truy xuất thông tin trên tập dữ liệu Cranfield\\ sử dụng TF-IDF, BM25, QLM.}
+\author[Nhóm 09 - IR]{%
+  \textbf{Nhóm lớp: 02}\\[0.8em]
+  \textbf{Nhóm sinh viên thực hiện: 09}\\[0.8em]
+  Ngô Việt Anh \hfill (MSV: B22DCKH004)\\[0.3em]
+  Nguyễn Đình Tiến \hfill (MSV: B22DCKH108)\\[1.2em]
+  \textbf{Giảng viên hướng dẫn:} Phạm Đức Cường}
+\institute[PTIT]{Khoa CNTT1 --- Học viện Công nghệ Bưu chính Viễn thông (PTIT)}
+\date{Tháng 5, 2026}
+
+% ─── Helper command ──────────────────────────────────────────────────────────
+\newcommand{\hl}[1]{\textcolor{accentorange}{\textbf{#1}}}
+\newcommand{\ok}{\textcolor{accentteal}{$\checkmark$}}
+\newcommand{\bad}{\textcolor{warnred}{$\times$}}
+\newcommand{\faQuestionCircle}{{\color{ptitmid}\textbf{?}}}
+\newcommand{\faDatabase}{{\color{ptitmid}\textbf{DB}}}
+\newcommand{\faExclamationTriangle}{{\color{accentorange}\textbf{!}}}
+\newcommand{\faLightbulb}{{\color{accentorange}\textbf{*}}}
+\newcommand{\faCheckCircle}{$\checkmark$}
+\newcommand{\faTimesCircle}{$\times$}
+\newcommand{\faMinusCircle}{$\circ$}
+\newcommand{\faEnvelope}{@}
+\newcommand{\faUniversity}{\textbf{U}}
+
+\begin{document}
+
+% ===== SLIDE 1: Title =====
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ===== SLIDE 2: Mục tiêu =====
+\begin{frame}{Mục tiêu dự án}
+\begin{itemize}
+    \item Xây dựng hệ thống tìm kiếm thông tin hoàn chỉnh trên bộ dữ liệu Cranfield (1400 tài liệu, 225 truy vấn).
+    \item Cài đặt 4 mô hình xếp hạng: TF-IDF, BM25, QLM Jelinek-Mercer, QLM Dirichlet.
+    \item Tích hợp module sửa lỗi chính tả dựa trên K-gram index và khoảng cách Levenshtein.
+    \item Đánh giá hiệu suất bằng các metric tiêu chuẩn (MAP, MRR, P@K, R@K, F1@K).
+\end{itemize}
+\end{frame}
+
+% ===== SLIDE 3: Kiến trúc hệ thống =====
+% \begin{frame}{Kiến trúc hệ thống}
+% \begin{columns}
+% \begin{column}{0.55\textwidth}
+%     \begin{itemize}
+%         \item \textbf{Backend (Python thuần)}:
+%         \begin{itemize}
+%             \item \texttt{indexer.py}: Tiền xử lý, chỉ mục ngược, K-gram index
+%             \item \texttt{models.py}: 4 mô hình xếp hạng
+%             \item \texttt{spellcheck.py}: Sửa lỗi chính tả
+%             \item \texttt{metrics.py}: Hàm đánh giá
+%         \end{itemize}
+%         \item \textbf{Frontend}: Streamlit (\texttt{app.py})
+%         \item \textbf{Notebooks}: Đánh giá và tinh chỉnh
+%     \end{itemize}
+% \end{column}
+% \begin{column}{0.4\textwidth}
+%     \small
+%     \begin{tabular}{l}
+%     \texttt{ir\_prj/} \\
+%     \quad \texttt{core/} \\
+%     \quad\quad \texttt{indexer.py} \\
+%     \quad\quad \texttt{models.py} \\
+%     \quad\quad \texttt{spellcheck.py} \\
+%     \quad\quad \texttt{metrics.py} \\
+%     \quad \texttt{notebooks/} \\
+%     \quad \texttt{results/} \\
+%     \quad \texttt{app.py} \\
+%     \end{tabular}
+% \end{column}
+% \end{columns}
+% \end{frame}
+
+\begin{frame}{Kiến trúc hệ thống & Luồng hoạt động (Data Flow)}
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm and 1.0cm,
+    box/.style={draw=ptitblue, fill=ptitlight, rectangle, rounded corners, text width=2.8cm, align=center, minimum height=0.8cm, font=\small\bfseries, line width=1pt},
+    db/.style={draw=ptitmid, fill=gridbg, cylinder, shape border rotate=90, text width=2.0cm, align=center, minimum height=0.9cm, font=\small\bfseries, line width=1pt},
+    arrow/.style={-Latex[scale=1.2], line width=1.2pt, ptitblue}
+]
+    % Row 1: Offline indexing
+    \node[db] (dataset) {Cranfield Dataset};
+    \node[box, right=of dataset] (preprocess) {Tiền xử lý văn bản\\(Stemming, Stopwords)};
+    \node[box, right=of preprocess] (indexer) {Xây dựng chỉ mục\\(Inverted \& K-gram)};
+    
+    % Row 2: Online query
+    \node[box, below=1.0cm of preprocess] (spell) {Sửa lỗi chính tả\\(K-gram \& Levenshtein)};
+    \node[box, right=of spell] (ranking) {Mô hình xếp hạng\\(TF-IDF, BM25, QLM)};
+    \node[box, left=of spell] (ui) {Giao diện tìm kiếm\\(Streamlit UI)};
+
+    % Connections
+    \draw[arrow] (dataset) -- (preprocess);
+    \draw[arrow] (preprocess) -- (indexer);
+    \draw[arrow] (ui) -- (spell);
+    \draw[arrow] (spell) -- (ranking);
+    \draw[arrow] (indexer) -- (ranking);
+    \draw[arrow] (ranking) |- ($(ui.south) - (0,0.4)$) -- (ui.south);
+\end{tikzpicture}
+\end{frame}
+
+% ===== SLIDE 4: Pipeline tiền xử lý =====
+\begin{frame}{Pipeline tiền xử lý văn bản}
+Các bước tiền xử lý được áp dụng thống nhất cho cả tài liệu và truy vấn:
+\begin{enumerate}
+    \item Chuyển chữ thường (lowercase)
+    \item Tách từ (tokenization) bằng biểu thức chính quy \texttt{[a-z0-9]+}
+    \item Loại bỏ từ dừng (NLTK English stopwords --- 179 từ)
+    \item Rút gọn gốc từ (Porter Stemmer)
+\end{enumerate}
+\vspace{0.5em}
+Kết quả: tập từ vựng gồm khoảng 4700 term (đã stem) từ 7300 từ gốc.
+\end{frame}
+
+% ===== SLIDE 5: Kết quả đánh giá --- Bảng =====
+\begin{frame}{Kết quả đánh giá --- Tham số mặc định}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Mô hình} & \textbf{P@10} & \textbf{R@10} & \textbf{F1@10} & \textbf{MAP} & \textbf{MRR} \\
+\midrule
+TF-IDF           & 0.3053 & 0.4487 & 0.3368 & 0.4097 & 0.8061 \\
+BM25             & 0.3191 & 0.4573 & 0.3482 & 0.4330 & 0.8292 \\
+QLM (JM)         & 0.2996 & 0.4405 & 0.3306 & 0.4061 & 0.8091 \\
+QLM (Dirichlet)  & 0.2991 & 0.4359 & 0.3287 & 0.4064 & 0.8075 \\
+\bottomrule
+\end{tabular}
+\caption{Kết quả với tham số tối ưu ($K=10$). BM25: $k_1\!=\!2.0, b\!=\!0.75$; QLM-JM: $\lambda\!=\!0.3$; QLM-Dir: $\mu\!=\!250$.}
+
+\begin{keybox}[Nhận xét kết quả tối ưu]
+    \begin{itemize}
+        \item \hl{BM25} đạt hiệu suất tốt nhất trên mọi chỉ số (MAP = 0.4330, MRR = 0.8292).
+        \item Hai mô hình ngôn ngữ \hl{QLM} có MAP tương đương (~0.406), thấp hơn BM25. Nguyên nhân do các tài liệu Cranfield tương đối ngắn nên QLM khó ước lượng chính xác phân bố xác suất từ.
+    \end{itemize}
+\end{keybox}
+
+\end{table}
 \end{frame}
 
 % ===== SLIDE 6: So sánh mô hình =====
@@ -107,14 +585,34 @@ QLM (Dirichlet)  & 0.2991 & 0.4359 & 0.3287 & 0.4064 & 0.8075 \\
 \begin{center}
     \includegraphics[width=0.85\textwidth]{figures/model_comparison_optimal.png}
 \end{center}
+\begin{goodbox}[Nhận xét biểu đồ]
+    \small
+    \begin{itemize}
+        \item BM25 vượt trội hẳn ở Precision và F1-score tại các mức K khác nhau.
+        \item TF-IDF gần với QLM và có xu hướng ổn định tương đương với QLM.
+    \end{itemize}
+\end{goodbox}
 \end{frame}
 
 % ===== SLIDE 7: Hyperparameter Tuning --- BM25 =====
 \begin{frame}{Tinh chỉnh siêu tham số --- BM25}
 Grid Search trên $k_1 \in \{0.5, 0.75, 1.0, 1.2, 1.5, 2.0\}$ và $b \in \{0.25, 0.5, 0.75, 1.0\}$.
-\begin{center}
-    \includegraphics[width=0.65\textwidth]{figures/bm25_heatmap.png}
-\end{center}
+\begin{columns}
+\begin{column}{0.55\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/bm25_heatmap.png}
+\end{column}
+\begin{column}{0.42\textwidth}
+    \begin{keybox}[Phân tích tác động tham số]
+        \small
+        \begin{itemize}
+            \item \hl{Tham số b (length normalization)}: Đóng vai trò cực kỳ quan trọng. Khi $b \to 0$ (không chuẩn hóa độ dài), hiệu suất giảm rõ rệt. Giá trị tối ưu là $b = 0.75$.
+            \item \hl{Tham số $k_1$ (TF saturation)}: Ổn định nhất ở các mức giá trị lớn ($k_1 = 2.0$).
+        \end{itemize}
+    \end{keybox}
+\end{column}
+\end{columns}
+
 \end{frame}
 
 % ===== SLIDE 8: Hyperparameter Tuning --- QLM =====
@@ -133,6 +631,13 @@ Grid Search trên $k_1 \in \{0.5, 0.75, 1.0, 1.2, 1.5, 2.0\}$ và $b \in \{0.25,
     \small $\mu$ từ 100 đến 3000
 \end{column}
 \end{columns}
+\begin{goodbox}[Nhận xét làm trơn]
+        \scriptsize
+        \begin{itemize}
+            \item \hl{QLM-JM:} $\lambda = 0.3$ tối ưu cho thấy cần dựa nhiều vào xác suất toàn tập (collection) để bù đắp các từ thiếu trong tài liệu ngắn.
+            \item \hl{QLM-Dirichlet:} $\mu = 250$ (giá trị tương đối nhỏ) phù hợp với chiều dài tài liệu trung bình ngắn của Cranfield (~103 tokens).
+        \end{itemize}
+    \end{goodbox}
 \end{frame}
 
 % ===== SLIDE 9: Tolerant Retrieval =====
@@ -145,13 +650,20 @@ Grid Search trên $k_1 \in \{0.5, 0.75, 1.0, 1.2, 1.5, 2.0\}$ và $b \in \{0.25,
 \begin{center}
     \includegraphics[width=0.7\textwidth]{figures/tolerant_comparison.png}
 \end{center}
+
 \end{frame}
 
 % ===== SLIDE 10: Tolerant Retrieval --- Per Query =====
 \begin{frame}{Tolerant Retrieval --- Phân tích theo từng truy vấn}
 \begin{center}
-    \includegraphics[width=0.8\textwidth]{figures/tolerant_per_query.png}
+    \includegraphics[width=0.7\textwidth]{figures/tolerant_per_query.png}
 \end{center}
+\begin{itemize}
+\scriptsize
+            \item Khi truy vấn bị viết sai, hiệu suất MAP giảm từ 0.3277 xuống 0.2704 (giảm khoảng 17.5\%).
+            \item Khi \hl{bật sửa lỗi}, MAP khôi phục lại hầu như hoàn toàn về mức 0.3265 (chỉ lệch 0.0012 so với truy vấn gốc).
+            \item Chỉ số MRR khôi phục hoàn toàn về mức 0.7125.
+\end{itemize}
 \end{frame}
 
 % ===== SLIDE 11: Nhận xét =====
@@ -160,16 +672,16 @@ Grid Search trên $k_1 \in \{0.5, 0.75, 1.0, 1.2, 1.5, 2.0\}$ và $b \in \{0.25,
     \item Các mô hình xác suất (BM25, QLM) cho kết quả vượt trội so với TF-IDF cơ bản.
     \item Tinh chỉnh siêu tham số cải thiện đáng kể hiệu suất, đặc biệt ở BM25.
     \item Module sửa lỗi chính tả giúp khôi phục phần lớn hiệu suất khi truy vấn bị viết sai.
-    \item Pipeline tiền xử lý thống nhất đảm bảo tính nhất quán giữa đánh giá và demo.
+    \item QLM cho kết quả hơi thấp hơn so với BM25 có thể do tập dữ liệu với văn bản chưa đủ dài
 \end{itemize}
 \end{frame}
 
 % ===== SLIDE 12: Kết luận =====
 \begin{frame}{Kết luận}
 \begin{itemize}
-    \item Đã xây dựng thành công hệ thống IR hoàn chỉnh với 4 mô hình xếp hạng.
+    \item Đã xây dựng thành công hệ thống IR hoàn chỉnh với 4 mô hình xếp hạng tự xây dựng.
     \item Hệ thống có khả năng sửa lỗi chính tả và giao diện tìm kiếm trực quan.
-    \item Các metric đánh giá được lập trình từ đầu, đảm bảo hiểu rõ cơ chế hoạt động.
+    \item Các metric đánh giá được xây dựng từ đầu.
     \item Kết quả tinh chỉnh siêu tham số được áp dụng trực tiếp vào giao diện demo.
 \end{itemize}
 \end{frame}

@@ -1,4 +1,5 @@
-\documentclass[12pt,a4paper]{article}
+% \documentclass[12pt,a4paper]{article}
+\documentclass[12pt,a4paper,twoside]{article}
 
 % --- Packages ---
 \usepackage[utf8]{inputenc}
@@ -6,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath, amssymb}
+\usepackage{mathptmx} % Sets font to Times New Roman
 \usepackage{hyperref}
 \usepackage{geometry}
 \usepackage{float}
@@ -13,18 +15,58 @@
 \usepackage{enumitem}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{fancybox}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{indentfirst}
 
-\geometry{margin=2.5cm}
+
+% \geometry{margin=2.5cm}
+\geometry{inner=3.5cm, outer=2.0cm, top=2.5cm, bottom=2.5cm}
+\setlength{\parindent}{1.0cm}
+
+
 \hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
-
-% --- Title ---
-\title{Báo cáo thực hành\\Hệ thống Information Retrieval trên bộ dữ liệu Cranfield}
-\author{Sinh viên}
-\date{\today}
 
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+\thispagestyle{empty}
+\thisfancypage{\setlength{\fboxsep}{12pt}\fbox}{}
+
+\begin{center}
+{\textbf{\large{HỌC VIỆN CÔNG NGHỆ BƯU CHÍNH VIỄN THÔNG}}}\\
+{\textbf{\large{KHOA CÔNG NGHỆ THÔNG TIN 1}}}\\
+{\textbf{\large{\underline{\hspace{3cm}} o0o \underline{\hspace{3cm}}}}}\\
+
+\vspace{1cm}
+\includegraphics[width=0.4\linewidth]{figures/ptit_logo_1.png}
+
+\vspace{1cm}
+{\textbf{\huge{BÁO CÁO BÀI TẬP LỚN}}}\\
+{\textbf{\huge{MÔN TRUY XUẤT THÔNG TIN}}}\\[0.8cm]
+{\textbf{\Large{Đề tài: Khảo sát hệ thống truy xuất thông tin trên tập dữ liệu Cranfield sử dụng TF-IDF, BM25, QLM}}}\\[1cm]
+
+\vspace{1.5cm}
+\begin{tabular}{ll}
+{\textbf{\large{Giảng viên hướng dẫn:}}} & {\textbf{\large{Phạm Đức Cường}}} \\
+{\textbf{\large{Nhóm lớp:}}}  & {\textbf{\large{02}}}\\
+{\textbf{\large{Nhóm bài tập lớn:}}}  & {\textbf{\large{09}}}\\
+{\textbf{\large{Sinh viên thực hiện:}}} & {\textbf{\large{Ngô Việt Anh - B22DCKH004}}} \\
+& {\textbf{\large{Nguyễn Đình Tiến - B22DCKH108}}}
+\end{tabular}
+
+\vspace{2cm}
+{\textbf{\large{HÀ NỘI, 05/2026}}}
+
+\end{center}
+\end{titlepage}
+
+\newpage
+\thispagestyle{empty}
+\mbox{}
+\newpage
+
 \tableofcontents
 \newpage
 
@@ -291,5 +333,34 @@ Hình~\ref{fig:tolerant_pq} phân tích chi tiết Average Precision cho từng 
 % ===========================================================================
 
 Báo cáo đã trình bày quá trình xây dựng, đánh giá, và tinh chỉnh một hệ thống tìm kiếm thông tin trên bộ dữ liệu Cranfield. Bốn mô hình xếp hạng được cài đặt và so sánh, trong đó các mô hình xác suất (BM25 và QLM) thể hiện hiệu suất cao hơn so với TF-IDF cơ bản. Quá trình tinh chỉnh siêu tham số bằng Grid Search giúp tìm ra cấu hình phù hợp nhất cho từng mô hình. Module sửa lỗi chính tả dựa trên K-gram index và khoảng cách Levenshtein cho thấy khả năng phục hồi hiệu suất khi truy vấn bị viết sai. Tất cả các thành phần được tích hợp vào giao diện Streamlit, tạo thành hệ thống tìm kiếm hoàn chỉnh và dễ sử dụng.
+
+\newpage
+
+\section{Nhiệm vụ các thành viên}
+
+
+\begin{center}
+    {\textbf{Nhiệm vụ, vai trò các thành viên}}
+\end{center}
+
+
+\begin{longtable}{|>{\centering\arraybackslash}p{3cm}|
+                      >{\centering\arraybackslash}p{4cm}|
+                      p{7.5cm}|}
+\hline
+\textbf{Mã sinh viên} & \textbf{Họ và tên} & \textbf{Nhiệm vụ và vai trò} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Mã sinh viên} & \textbf{Họ và tên} & \textbf{Nhiệm vụ, vai trò} \\
+\hline
+\endhead
+
+B22DCKH004 & Ngô Việt Anh & Xây dựng cấu trúc chỉ mục ngược, chỉ mục K-gram, mô hình xếp hạng không gian vector TF-IDF, module đề xuất và sửa lỗi chính tả sử dụng khoảng cách Levenshtein (Edit Distance). \\
+\hline
+B22DCKH108 & Nguyễn Đình Tiến & Cài đặt mô hình xác suất Okapi BM25, mô hình Query Likelihood (QLM với Jelinek-Mercer smoothing và Dirichlet Prior smoothing), các hàm đánh giá hiệu suất (P@K, R@K, F1@K, MAP, MRR). \\
+\hline
+\end{longtable}
 
 \end{document}

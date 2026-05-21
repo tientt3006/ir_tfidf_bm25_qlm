@@ -25,7 +25,6 @@ from core.spellcheck import correct_query, set_doc_frequencies
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Cranfield IR System",
-    page_icon="🔍",
     layout="wide",
 )
 
@@ -78,12 +77,12 @@ st.markdown("""
     
     /* Result card */
     .result-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-left: 4px solid #4361ee;
-        border-radius: 8px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-left: 4px solid #1d3557;
+        border-radius: 6px;
         padding: 1rem 1.25rem;
         margin-bottom: 0.75rem;
-        transition: transform 0.15s ease;
     }
     .result-card:hover {
         transform: translateX(4px);
@@ -107,7 +106,7 @@ st.markdown("""
     }
     .result-rank {
         display: inline-block;
-        background: #4361ee;
+        background: #1d3557;
         color: white;
         border-radius: 50%;
         width: 24px;
@@ -140,9 +139,7 @@ st.markdown("""
     }
     .main-header h1 {
         font-size: 2rem;
-        background: linear-gradient(135deg, #4361ee, #7209b7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #1d3557;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -151,7 +148,7 @@ st.markdown("""
 # Sidebar — Control Panel
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Control Panel")
+    st.header("Control Panel")
     st.markdown("---")
 
     # Model selector
@@ -196,7 +193,7 @@ with st.sidebar:
 
     # Spell-check toggle
     spell_check_enabled = st.checkbox(
-        "✏️ Enable Spell Correction",
+        "Enable Spell Correction",
         value=True,
         help="Automatically correct misspelled query terms using K-gram index and edit distance."
     )
@@ -208,12 +205,12 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.caption(f"📊 Corpus: Cranfield ({N} docs)")
-    st.caption(f"📝 Vocabulary: {len(inverted_index)} terms")
+    st.caption(f"Corpus: Cranfield ({N} docs)")
+    st.caption(f"Vocabulary: {len(inverted_index)} terms")
     if os.path.exists(BEST_PARAMS_FILE):
-        st.caption("✅ Using tuned parameters")
+        st.caption("Using tuned parameters")
     else:
-        st.caption("⚠️ Using default parameters")
+        st.caption("Using default parameters")
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +218,7 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 st.markdown("""
 <div class="main-header">
-    <h1>🔍 Cranfield IR System</h1>
+    <h1>Cranfield IR System</h1>
 </div>
 """, unsafe_allow_html=True)
 
@@ -290,7 +287,7 @@ if query_text.strip():
 
 else:
     # Show example queries when search is empty
-    st.markdown("### 💡 Try one of these queries:")
+    st.markdown("### Try one of these queries:")
     example_qids = [1, 5, 10, 30, 50]
     cols = st.columns(len(example_qids))
     for col, qid in zip(cols, example_qids):
