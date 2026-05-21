@@ -212,25 +212,22 @@ F1@K = \frac{2 \cdot P@K \cdot R@K}{P@K + R@K}
 \section{Thiết kế hệ thống}
 % ===========================================================================
 
-% ---------------------------------------------------------------------------
-\subsection{Cấu trúc dự án}
-% ---------------------------------------------------------------------------
-
-Dự án được tổ chức thành các module riêng biệt nhằm tách biệt phần thuật toán lõi, phần đánh giá, và phần giao diện. Thư mục \texttt{core/} chứa bốn module chính: \texttt{indexer.py} đảm nhận tiền xử lý văn bản và xây dựng chỉ mục; \texttt{models.py} cài đặt bốn mô hình xếp hạng; \texttt{spellcheck.py} xử lý sửa lỗi chính tả; và \texttt{metrics.py} tính toán các metric đánh giá.
-
-Bộ dữ liệu Cranfield được tải tự động thông qua thư viện \texttt{ir\_datasets} và lưu cache dưới dạng JSON trong thư mục \texttt{data/cranfield/} để tăng tốc lần tải tiếp theo.
-
-% ---------------------------------------------------------------------------
-\subsection{Pipeline tiền xử lý}
-% ---------------------------------------------------------------------------
-
-Quá trình tiền xử lý được chuẩn hóa và áp dụng thống nhất cho cả tài liệu lẫn truy vấn. Các bước bao gồm: chuyển chữ thường, tách từ bằng biểu thức chính quy \texttt{[a-z0-9]+}, loại bỏ từ dừng (sử dụng danh sách 179 từ dừng tiếng Anh từ NLTK), và rút gọn gốc từ bằng thuật toán Porter Stemmer. Tính nhất quán của pipeline này đảm bảo rằng term trong truy vấn khớp chính xác với term trong chỉ mục.
-
-% ---------------------------------------------------------------------------
-\subsection{Giao diện Streamlit}
+% ---------------------------------------\subsection{Giao diện Streamlit}
 % ---------------------------------------------------------------------------
 
 Giao diện được chia thành hai phần: thanh bên (sidebar) chứa bảng điều khiển cho phép chọn mô hình, điều chỉnh tham số qua thanh trượt, và bật/tắt sửa lỗi chính tả; phần chính hiển thị ô tìm kiếm, gợi ý sửa lỗi, và danh sách kết quả dưới dạng thẻ. Giá trị mặc định của các thanh trượt được lấy từ kết quả tinh chỉnh siêu tham số.
+
+% ---------------------------------------------------------------------------
+\subsection{Quy trình hoạt động và luồng xử lý}
+% ---------------------------------------------------------------------------
+
+Quy trình hoạt động của hệ thống được chia làm hai giai đoạn chính là xử lý ngoại tuyến và xử lý trực tuyến. Ở giai đoạn ngoại tuyến, hệ thống bắt đầu bằng việc tải tự động bộ dữ liệu Cranfield từ thư viện dữ liệu. Tập tài liệu thô sau đó được đưa qua pipeline tiền xử lý để chuyển thành chữ thường, tách thành các từ đơn, loại bỏ từ dừng và tiến hành rút gọn gốc từ bằng thuật toán Porter. Kết quả tiền xử lý được dùng để xây dựng hai cấu trúc dữ liệu quan trọng là chỉ mục ngược nhằm phục vụ truy xuất nhanh và chỉ mục K-gram phục vụ cho việc sửa lỗi chính tả. Toàn bộ các chỉ mục này cùng danh sách tài liệu thô và truy vấn gốc được lưu trữ dưới dạng bộ nhớ đệm cache trên ổ đĩa để tăng tốc độ khởi động cho những lần chạy sau.
+
+Ở giai đoạn xử lý trực tuyến khi người dùng tương tác với giao diện Streamlit, quy trình xử lý truy vấn chịu lỗi được kích hoạt. Khi người dùng nhập một câu truy vấn bất kỳ, hệ thống sẽ tiến hành chuẩn hóa và tách câu thành danh sách các từ. Đối với mỗi từ, hệ thống kiểm tra xem từ đó có tồn tại trong từ vựng của tập dữ liệu hay không. Nếu phát hiện từ không có trong từ điển, hệ thống sẽ tự động tách từ lỗi này thành các chuỗi con hai ký tự (bigrams) rồi tra cứu trong chỉ mục K-gram để lấy ra danh sách các từ ứng viên chia sẻ chung các chuỗi con này. Hệ thống tính toán hệ số tương đồng Jaccard để lọc bớt các ứng viên kém chất lượng, sau đó áp dụng thuật toán quy hoạch động tính khoảng cách sửa lỗi Levenshtein để tìm từ trong từ điển có khoảng cách biến đổi nhỏ nhất (trong ngưỡng cho phép tối đa là hai). Từ sai chính tả sẽ được thay thế bằng từ chính xác để tạo ra câu truy vấn đã hiệu chỉnh.
+
+Câu truy vấn sau khi hiệu chỉnh được đưa vào bộ tiền xử lý tương tự như tài liệu để thu được các gốc từ chuẩn. Dựa trên các gốc từ này, hệ thống truy xuất các danh sách tài liệu tương ứng từ chỉ mục ngược. Các mô hình xếp hạng được lựa chọn (như TF-IDF, BM25 hoặc QLM) sẽ tính toán điểm số tương đồng giữa câu truy vấn và từng tài liệu dựa trên các tham số cấu hình do người dùng thiết lập trên giao diện hoặc các tham số tối ưu có sẵn. Cuối cùng, danh sách tài liệu được sắp xếp theo điểm số giảm dần và hiển thị trực quan lên giao diện dưới dạng các thẻ kết quả kèm theo thông tin về thời gian phản hồi.
+
+Quy trình tinh chỉnh siêu tham số và đánh giá hệ thống được thực hiện tự động thông qua các tập lệnh kiểm thử. Hệ thống thực hiện Grid Search duyệt qua toàn bộ không gian tham số của từng mô hình, tiến hành truy xuất kết quả cho tất cả 225 truy vấn thử nghiệm và tính toán các độ đo hiệu suất tại ngưỡng cắt K bằng mười. Bộ tham số nào mang lại giá trị MAP cao nhất sẽ được lựa chọn làm cấu hình tối ưu và ghi lại vào tệp cấu hình để giao diện Streamlit tự động nạp làm giá trị mặc định cho người dùng.
 
 % ===========================================================================
 \section{Thực nghiệm và kết quả}
@@ -258,15 +255,17 @@ QLM (Dirichlet)    & 0.2991 & 0.4359 & 0.3287 & 0.4064 & 0.8075 \\
 \label{tab:baseline}
 \end{table}
 
-BM25 đạt MAP cao nhất (0.4330) và MRR cao nhất (0.8292), cho thấy mô hình này xếp hạng tài liệu liên quan ở vị trí cao hơn các mô hình còn lại. TF-IDF có hiệu suất gần tương đương QLM trên bộ dữ liệu này, đạt MAP 0.4097. Hai biến thể QLM cho kết quả tương tự nhau, với MAP xấp xỉ 0.406.
+Kết quả thực nghiệm cho thấy mô hình BM25 đạt hiệu suất vượt trội so với các phương pháp khác, dẫn đầu ở mọi chỉ số đánh giá với điểm số MAP đạt 0.4330 và điểm số MRR đạt 0.8292. Điều này cho thấy mô hình BM25 có khả năng sắp xếp các tài liệu thực sự liên quan lên các vị trí đầu tiên của danh sách kết quả một cách chính xác. Hiệu suất cao của BM25 xuất phát từ việc tích hợp tốt cơ chế bão hòa tần suất xuất hiện của từ khóa cùng với việc chuẩn hóa độ dài tài liệu một cách linh hoạt thông qua tham số bão hòa và tham số chuẩn hóa độ dài. 
+
+Mô hình TF-IDF đứng thứ hai với điểm số MAP đạt 0.4097 và MRR đạt 0.8061, bám sát các mô hình còn lại nhờ cơ chế chuẩn hóa độ dài bằng căn bậc hai độ dài tài liệu, giúp hạn chế thiên vị đối với các tài liệu dài. Hai biến thể của mô hình ngôn ngữ truy vấn là QLM Jelinek-Mercer và QLM Dirichlet cho hiệu suất gần như tương đương nhau với điểm số MAP dao động xung quanh mức 0.406. Hiệu suất của hai mô hình ngôn ngữ này thấp hơn so với BM25 một phần do đặc thù của bộ dữ liệu Cranfield chỉ bao gồm các đoạn tóm tắt ngắn của các bài báo khoa học. Do văn bản tài liệu ngắn nên không gian xác suất để xây dựng mô hình ngôn ngữ tài liệu bị hạn chế và dễ bị nhiễu, dẫn đến việc ước lượng xác suất sinh truy vấn chưa đạt được hiệu quả tối đa như mô hình xác suất BM25.
 
 % ---------------------------------------------------------------------------
 \subsection{Tinh chỉnh siêu tham số}
 % ---------------------------------------------------------------------------
 
-Siêu tham số của ba mô hình (BM25, QLM-JM, QLM-Dirichlet) được tinh chỉnh bằng Grid Search, tối ưu theo MAP trên toàn bộ 225 truy vấn. Kết quả cho thấy BM25 đạt MAP cao nhất tại $k_1 = 2.0$ và $b = 0.75$. QLM Jelinek-Mercer tối ưu tại $\lambda = 0.3$, cho thấy mô hình ưu tiên thông tin từ toàn bộ tập dữ liệu hơn là từ tài liệu đơn lẻ. QLM Dirichlet đạt hiệu suất tốt nhất tại $\mu = 250$, một giá trị tương đối nhỏ phù hợp với tập tài liệu có độ dài trung bình khoảng 103 token.
+Siêu tham số của ba mô hình BM25, QLM Jelinek-Mercer và QLM Dirichlet được tinh chỉnh thông qua phương pháp Grid Search để tối ưu hóa chỉ số MAP trên toàn bộ 225 truy vấn của bộ dữ liệu. Kết quả tinh chỉnh cho thấy sự biến động hiệu suất rõ rệt khi thay đổi các giá trị tham số, đồng thời giúp xác định được cấu hình tối ưu cho từng thuật toán xếp hạng.
 
-Hình~\ref{fig:bm25_heatmap} biểu diễn MAP của BM25 theo lưới $k_1 \times b$. Có thể quan sát rằng hiệu suất thay đổi đáng kể theo cả hai tham số. Vùng tối ưu nằm ở khoảng giá trị trung bình của $b$ và $k_1$ vừa phải.
+Biểu đồ nhiệt ở Hình~\ref{fig:bm25_heatmap} thể hiện sự thay đổi điểm số MAP của mô hình BM25 theo sự kết hợp của hai siêu tham số là b và k1. Quan sát biểu đồ cho thấy tham số chuẩn hóa độ dài tài liệu b đóng vai trò quyết định đến hiệu suất hệ thống. Khi giá trị b tiến dần về không (tức là loại bỏ hoàn toàn cơ chế chuẩn hóa độ dài tài liệu), điểm số MAP sụt giảm rất mạnh. Điều này là do các tài liệu dài có xu hướng chứa nhiều từ khóa hơn sẽ bị đánh giá cao hơn một cách bất công nếu không được chuẩn hóa. Vùng tối ưu trên biểu đồ nhiệt tập trung xung quanh giá trị b bằng 0.75 và giá trị k1 bằng 2.0. Tại điểm tối ưu này, hệ thống đạt điểm số MAP cao nhất là 0.4330.
 
 \begin{figure}[H]
 \centering
@@ -275,7 +274,7 @@ Hình~\ref{fig:bm25_heatmap} biểu diễn MAP của BM25 theo lưới $k_1 \tim
 \label{fig:bm25_heatmap}
 \end{figure}
 
-Hình~\ref{fig:qlm_jm} và Hình~\ref{fig:qlm_dir} lần lượt biểu diễn MAP khi thay đổi $\lambda$ (Jelinek-Mercer) và $\mu$ (Dirichlet).
+Đối với mô hình ngôn ngữ QLM sử dụng làm trơn Jelinek-Mercer, Hình~\ref{fig:qlm_jm} mô tả sự phụ thuộc của điểm số MAP vào tham số làm trơn lambda. Điểm số MAP đạt giá trị cực đại tại lambda bằng 0.3. Việc giá trị lambda tối ưu nằm ở mức thấp (0.3 thay vì sát mức 1.0) cho thấy mô hình cần dựa nhiều vào phân bố xác suất từ vựng trên toàn tập dữ liệu (collection model) để bổ sung và làm trơn cho mô hình ngôn ngữ của từng tài liệu đơn lẻ. Điều này hoàn toàn phù hợp với thực tế rằng các tài liệu ngắn trong tập dữ liệu Cranfield thường thiếu vắng nhiều từ khóa liên quan, do đó việc dựa vào tần suất từ vựng toàn cục giúp giảm thiểu hiện tượng gán xác suất bằng không cho các từ khóa truy vấn không xuất hiện trực tiếp trong tài liệu.
 
 \begin{figure}[H]
 \centering
@@ -283,6 +282,8 @@ Hình~\ref{fig:qlm_jm} và Hình~\ref{fig:qlm_dir} lần lượt biểu diễn M
 \caption{QLM Jelinek-Mercer --- MAP theo $\lambda$.}
 \label{fig:qlm_jm}
 \end{figure}
+
+Đối với mô hình QLM sử dụng làm trơn Dirichlet Prior, Hình~\ref{fig:qlm_dir} thể hiện tác động của tham số giả định mu lên hiệu suất tìm kiếm. Điểm số MAP đạt đỉnh cao nhất tại mu bằng 250, sau đó giảm dần khi giá trị mu tiếp tục tăng lên các mức cao hơn. Giá trị mu tối ưu tương đối nhỏ (250) phản ánh trung bình độ dài tài liệu trong tập dữ liệu Cranfield khá ngắn, chỉ khoảng 103 từ đơn. Mức mu này cung cấp một lượng làm trơn vừa phải, giúp cân bằng tốt giữa thông tin thực tế có trong tài liệu ngắn và phân bố nền của toàn tập dữ liệu mà không làm lu mờ đi các đặc trưng riêng của tài liệu.
 
 \begin{figure}[H]
 \centering
@@ -295,7 +296,7 @@ Hình~\ref{fig:qlm_jm} và Hình~\ref{fig:qlm_dir} lần lượt biểu diễn M
 \subsection{So sánh sau tinh chỉnh}
 % ---------------------------------------------------------------------------
 
-Hình~\ref{fig:comparison} so sánh hiệu suất của bốn mô hình sau khi áp dụng tham số tối ưu.
+Biểu đồ so sánh hiệu suất các mô hình sau tinh chỉnh siêu tham số ở Hình~\ref{fig:comparison} cho thấy cái nhìn toàn diện về năm chỉ số đánh giá của bốn thuật toán xếp hạng tại ngưỡng cắt K bằng mười. Dựa vào biểu đồ, mô hình xác suất BM25 thể hiện sự áp đảo rõ rệt khi dẫn đầu ở các chỉ số Precision, Recall và F1-score. Mô hình TF-IDF cho thấy sự bền bỉ đáng kể khi duy trì hiệu suất bám đuổi sát nút với mô hình BM25 ở các mức độ đánh giá khác nhau. Hai biến thể của mô hình ngôn ngữ QLM Jelinek-Mercer và Dirichlet Prior có sự tương đồng rất cao về mặt phân bố điểm số và cùng xếp ở nhóm sau, phản ánh tính chất tương đương trong cơ chế làm trơn xác suất đối với tập văn bản ngắn. Điểm số MRR của tất cả các mô hình đều đạt mức rất cao (trên 0.80), cho thấy hệ thống luôn đưa được ít nhất một tài liệu liên quan lên vị trí cực kỳ cao (thường là vị trí thứ nhất hoặc thứ hai) trong danh sách trả về, đảm bảo trải nghiệm tốt cho người dùng cuối.
 
 \begin{figure}[H]
 \centering
@@ -308,9 +309,9 @@ Hình~\ref{fig:comparison} so sánh hiệu suất của bốn mô hình sau khi 
 \section{Tolerant Retrieval}
 % ===========================================================================
 
-Thí nghiệm đánh giá hiệu quả module sửa lỗi chính tả. Mười truy vấn được chọn và viết sai chính tả có chủ đích (ví dụ ``aerodynamics'' thành ``aerodinamics'', ``boundary'' thành ``boundry''). Mỗi truy vấn được chạy qua hệ thống ở hai chế độ: tắt sửa lỗi (truy vấn sai được sử dụng trực tiếp) và bật sửa lỗi (truy vấn được sửa trước khi tìm kiếm).
+Thực nghiệm đánh giá hiệu quả của module tìm kiếm chịu lỗi và sửa lỗi chính tả được tiến hành bằng cách lựa chọn mười câu truy vấn ngẫu nhiên và cố ý thay đổi ký tự để tạo ra các lỗi chính tả phổ biến như thay thế ký tự, thiếu ký tự hoặc gõ sai vị trí phím. Các câu truy vấn bị lỗi chính tả này được đưa vào kiểm thử trên hệ thống dưới hai điều kiện khác nhau là tắt tính năng sửa lỗi để tìm kiếm trực tiếp và bật tính năng tự động sửa lỗi dựa trên chỉ mục K-gram kết hợp khoảng cách Levenshtein. Kết quả hiệu suất được đối sánh trực tiếp với kết quả chạy câu truy vấn gốc ban đầu làm mốc so sánh tiêu chuẩn.
 
-Hình~\ref{fig:tolerant} cho thấy sự khác biệt giữa ba điều kiện: truy vấn gốc (chuẩn), truy vấn sai không sửa, và truy vấn sai có sửa. Khi truy vấn bị sai chính tả và không được sửa, các metric giảm đáng kể do nhiều term không được tìm thấy trong chỉ mục. Sau khi bật module sửa lỗi, hiệu suất phục hồi, mặc dù có thể không đạt mức ban đầu do một số từ được sửa không hoàn toàn chính xác.
+Hình~\ref{fig:tolerant} biểu diễn sự biến động hiệu suất tổng quan của hệ thống dưới ba trạng thái của câu truy vấn. Khi người dùng nhập câu truy vấn bị sai chính tả và hệ thống tắt tính năng sửa lỗi, điểm số MAP trung bình giảm mạnh từ 0.3277 xuống còn 0.2704, tương đương mức giảm khoảng mười bảy phần trăm, trong khi điểm số MRR cũng sụt giảm từ 0.7125 xuống còn 0.6322. Sự sụt giảm nghiêm trọng này xảy ra do các từ bị viết sai chính tả không thể tìm thấy các tài liệu chứa chúng trong chỉ mục ngược, dẫn đến việc mất mát các tài liệu liên quan quan trọng. Tuy nhiên, sau khi kích hoạt tính năng tự động sửa lỗi, điểm số MAP của hệ thống được khôi phục mạnh mẽ lên mức 0.3265, đạt hơn chín mươi chín phần trăm hiệu suất so với câu truy vấn gốc ban đầu, đồng thời điểm số MRR cũng quay trở lại mức 0.7125. Kết quả này chứng minh tính hiệu quả vượt trội và sự cần thiết của module sửa lỗi chính tả trong việc duy trì độ ổn định của hệ thống tìm kiếm trước các sai sót ngẫu nhiên của người dùng.
 
 \begin{figure}[H]
 \centering
@@ -319,7 +320,7 @@ Hình~\ref{fig:tolerant} cho thấy sự khác biệt giữa ba điều kiện: 
 \label{fig:tolerant}
 \end{figure}
 
-Hình~\ref{fig:tolerant_pq} phân tích chi tiết Average Precision cho từng truy vấn trong cả ba điều kiện.
+Hình~\ref{fig:tolerant_pq} cung cấp cái nhìn chi tiết hơn về giá trị Average Precision của từng câu truy vấn trong số mười câu truy vấn thử nghiệm dưới ba điều kiện. Qua phân tích chi tiết, hầu hết các câu truy vấn sau khi sửa lỗi chính tả đều đạt được mức điểm số trùng khớp hoàn toàn với đường đồ thị của câu truy vấn gốc. Điều này phản ánh các lỗi sai tiêu biểu như viết thiếu chữ hoặc đảo ký tự đã được thuật toán sửa lỗi chuyển đổi chính xác về từ gốc chuẩn trong từ điển. Một số ít câu truy vấn có sự lệch điểm số rất nhỏ so với nguyên bản do từ được sửa đổi tuy có khoảng cách Levenshtein nhỏ nhất nhưng chưa phản ánh đúng hoàn toàn ngữ cảnh chuyên môn, tuy nhiên mức độ ảnh hưởng là không đáng kể và xu hướng chung vẫn là sự phục hồi hiệu suất tối đa.
 
 \begin{figure}[H]
 \centering
