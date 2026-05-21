@@ -1,0 +1,90 @@
+{
+  "original": {
+    "P@10": 0.24,
+    "R@10": 0.29224137931034483,
+    "F1@10": 0.21154090354090355,
+    "MAP": 0.3277365125752859,
+    "MRR": 0.7125
+  },
+  "misspelled_correction_off": {
+    "P@10": 0.21000000000000002,
+    "R@10": 0.24224137931034484,
+    "F1@10": 0.17503296703296703,
+    "MAP": 0.2704059118204352,
+    "MRR": 0.6322377622377623
+  },
+  "misspelled_correction_on": {
+    "P@10": 0.24,
+    "R@10": 0.29224137931034483,
+    "F1@10": 0.21154090354090355,
+    "MAP": 0.3265902365589009,
+    "MRR": 0.7125
+  },
+  "corrections_log": {
+    "1": {
+      "original": "what similarity laws must be obeyed when constructing aeroelastic models\nof heated high speed aircraft .",
+      "misspelled": "what similrity laws must be obeyed when constructing aeroelastic models\nof haeted high speed aircraft .",
+      "corrected": "what similarity laws must be opened when constructing aeroelastic models of heated high speed aircraft",
+      "was_corrected": true
+    },
+    "24": {
+      "original": "what are the factors which influence the time required to invert large\nstructural matrices .",
+      "misspelled": "what are the factors which influence the time required to invert large\nstructral matrices .",
+      "corrected": "what are the factors which influence the time required to inverts large structural matrices",
+      "was_corrected": true
+    },
+    "44": {
+      "original": "what are the details of the rigorous kinetic theory of gases .\n(chapman-enskog theory) .",
+      "misspelled": "what are the details of the rigorous kinetic theroy of gases .\n(chapman-enskog theroy) .",
+      "corrected": "what are the details of the rigorous kinetic theory of gases chapman enskog theory",
+      "was_corrected": true
+    },
+    "62": {
+      "original": "how far around a cylinder and under what conditions of flow,  if any,\nis the velocity just outside of the boundary layer a linear function of\nthe distance around the cylinder .",
+      "misspelled": "how far around a cylindr and under what conditions of flw,  if any,\nis the velocty just outside of the boundry layr a linear function of\nthe distance around the cylindr .",
+      "corrected": "how far around a cylinder and under what conditions of flow if any is the velocity just outside of the boundary layer a linear function of the distance around the cylinder",
+      "was_corrected": true
+    },
+    "80": {
+      "original": "are methods of measuring aerodynamic derivatives available which\ncould be adopted for use in short running time facilities .",
+      "misspelled": "are methods of measuring aerodinamic derivatives available which\ncould be adopted for use in short running time facilities .",
+      "corrected": "are methods of measuring aerodynamic derivatives available which could be adopted for use in short running time facilities",
+      "was_corrected": true
+    },
+    "109": {
+      "original": "panels subjected to aerodynamic heating .",
+      "misspelled": "panels subjected to aerodinamic haeting .",
+      "corrected": "panels subjected to aerodynamic heating",
+      "was_corrected": true
+    },
+    "133": {
+      "original": "experimental studies of creep buckling .",
+      "misspelled": "experimetal studies of creep buckling .",
+      "corrected": "experimental studies of creep buckling",
+      "was_corrected": true
+    },
+    "157": {
+      "original": "have flow fields been calculated for blunt-nosed bodies and compared\nwith experiment for a wide range of free stream conditions and body\nshapes .",
+      "misspelled": "have flw fields been calculated for blunt-nosed bodies and compared\nwith experiment for a wide range of free stream conditions and body\nshapes .",
+      "corrected": "have flow fields been calculated for blunt nosed bodies and compared with experiment for a wide range of free stream conditions and body shapes",
+      "was_corrected": true
+    },
+    "176": {
+      "original": "some approximate analytical heat conduction solutions using methods\nother than biot's principle .",
+      "misspelled": "some approximate analytical haet conducton solutions using methods\nother than biot's principle .",
+      "corrected": "some approximate analytical heat conduction solutions using methods other than biot s principle",
+      "was_corrected": true
+    },
+    "205": {
+      "original": "has anyone investigated theoretically whether surface flexibility\ncan stabilize a laminar boundary layer .",
+      "misspelled": "has anyone investigated theoretically whether surface flexibility\ncan stabilize a lamnar boundry layr .",
+      "corrected": "has alone investigated theoretically whether surface flexibility can stabilize a laminar boundary layer",
+      "was_corrected": true
+    }
+  },
+  "model": "BM25",
+  "model_params": {
+    "k1": 2.0,
+    "b": 0.75
+  }
+}

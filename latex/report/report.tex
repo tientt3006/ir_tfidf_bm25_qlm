@@ -1,0 +1,295 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% --- Title ---
+\title{Báo cáo thực hành\\Hệ thống Information Retrieval trên bộ dữ liệu Cranfield}
+\author{Sinh viên}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ===========================================================================
+\section{Giới thiệu}
+% ===========================================================================
+
+Bài báo cáo trình bày quá trình xây dựng một hệ thống tìm kiếm thông tin (Information Retrieval -- IR) trên bộ dữ liệu Cranfield. Hệ thống bao gồm phần lõi thuật toán được lập trình bằng Python thuần và giao diện người dùng bằng Streamlit. Bốn mô hình xếp hạng được cài đặt và đánh giá: TF-IDF, Okapi BM25, Query Likelihood Model với Jelinek-Mercer Smoothing (QLM-JM) và Query Likelihood Model với Dirichlet Prior Smoothing (QLM-Dirichlet). Ngoài ra, hệ thống tích hợp module sửa lỗi chính tả dựa trên K-gram index và khoảng cách chỉnh sửa Levenshtein.
+
+Bộ dữ liệu Cranfield gồm 1400 tài liệu khoa học về hàng không, 225 truy vấn, và bộ đánh giá liên quan (qrels) cho phép đánh giá hiệu suất tìm kiếm một cách khách quan. Đây là bộ dữ liệu kinh điển trong lĩnh vực IR, được sử dụng rộng rãi trong nghiên cứu và giảng dạy.
+
+% ===========================================================================
+\section{Cơ sở lý thuyết}
+% ===========================================================================
+
+% ---------------------------------------------------------------------------
+\subsection{Chỉ mục ngược (Inverted Index)}
+% ---------------------------------------------------------------------------
+
+Chỉ mục ngược là cấu trúc dữ liệu nền tảng của hệ thống IR. Với mỗi term $t$ trong từ vựng, chỉ mục lưu trữ danh sách các tài liệu chứa $t$ cùng vị trí xuất hiện. Cấu trúc này cho phép truy vấn nhanh chóng thay vì phải duyệt tuần tự qua toàn bộ kho tài liệu.
+
+Trong hệ thống này, chỉ mục ngược có dạng:
+\[
+\text{index}[t] = \{d_1: [p_1, p_2, \ldots], \; d_2: [p_1, \ldots], \; \ldots\}
+\]
+trong đó $d_i$ là mã tài liệu và $p_j$ là vị trí xuất hiện của term $t$ trong tài liệu đó.
+
+% ---------------------------------------------------------------------------
+\subsection{TF-IDF}
+% ---------------------------------------------------------------------------
+
+Mô hình TF-IDF kết hợp hai yếu tố: tần suất xuất hiện của term trong tài liệu (Term Frequency) và mức độ hiếm của term trong toàn bộ kho (Inverse Document Frequency). Trọng số của term $t$ trong tài liệu $d$ được tính như sau:
+
+\begin{equation}
+w_{t,d} = \text{tf}_{t,d} \times \text{idf}_t
+\end{equation}
+
+trong đó:
+\begin{equation}
+\text{tf}_{t,d} = 1 + \log_{10}(f_{t,d}), \quad f_{t,d} > 0
+\end{equation}
+\begin{equation}
+\text{idf}_t = \log_{10}\left(\frac{N}{\text{df}_t}\right)
+\end{equation}
+
+$f_{t,d}$ là số lần xuất hiện của $t$ trong $d$, $N$ là tổng số tài liệu, và $\text{df}_t$ là số tài liệu chứa $t$. Điểm số cuối cùng được chuẩn hóa bằng căn bậc hai của độ dài tài liệu để tránh thiên lệch cho tài liệu dài.
+
+% ---------------------------------------------------------------------------
+\subsection{Okapi BM25}
+% ---------------------------------------------------------------------------
+
+BM25 là mô hình xếp hạng xác suất được phát triển dựa trên mô hình xác suất nhị phân độc lập (Binary Independence Model). So với TF-IDF, BM25 giới thiệu cơ chế bão hòa cho term frequency và chuẩn hóa độ dài tài liệu một cách rõ ràng qua hai tham số $k_1$ và $b$.
+
+Điểm số BM25 được tính:
+\begin{equation}
+\text{score}(D, Q) = \sum_{t \in Q} \text{IDF}(t) \cdot \frac{f_{t,D} \cdot (k_1 + 1)}{f_{t,D} + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}
+\end{equation}
+
+trong đó:
+\begin{equation}
+\text{IDF}(t) = \ln\left(\frac{N - \text{df}_t + 0.5}{\text{df}_t + 0.5} + 1\right)
+\end{equation}
+
+Tham số $k_1$ kiểm soát mức độ bão hòa của term frequency: giá trị $k_1$ lớn cho phép term frequency tiếp tục tăng ảnh hưởng, trong khi giá trị nhỏ hạn chế ảnh hưởng sau vài lần xuất hiện. Tham số $b$ kiểm soát mức chuẩn hóa độ dài: $b = 0$ bỏ qua chuẩn hóa, $b = 1$ chuẩn hóa hoàn toàn theo tỉ lệ độ dài so với trung bình.
+
+% ---------------------------------------------------------------------------
+\subsection{Query Likelihood Model --- Jelinek-Mercer Smoothing}
+% ---------------------------------------------------------------------------
+
+Mô hình Query Likelihood (QLM) tiếp cận bài toán xếp hạng từ góc độ mô hình ngôn ngữ. Ý tưởng chính là ước lượng xác suất sinh ra truy vấn $Q$ từ mô hình ngôn ngữ của tài liệu $D$, sau đó xếp hạng các tài liệu theo xác suất này.
+
+Với phương pháp làm trơn Jelinek-Mercer, xác suất được tính bằng phép nội suy tuyến tính giữa mô hình tài liệu và mô hình tập dữ liệu:
+\begin{equation}
+P(t|D) = \lambda \cdot \frac{f_{t,D}}{|D|} + (1 - \lambda) \cdot P(t|C)
+\end{equation}
+
+trong đó $P(t|C)$ là xác suất của term $t$ trong toàn bộ tập dữ liệu (collection), và $\lambda \in (0, 1)$ là tham số làm trơn. Điểm số của tài liệu:
+\begin{equation}
+\text{score}(D, Q) = \sum_{t \in Q} \log P(t|D)
+\end{equation}
+
+Tham số $\lambda$ cân bằng giữa bằng chứng từ tài liệu cụ thể và bằng chứng từ toàn bộ tập dữ liệu. Giá trị $\lambda$ cao (gần 1) tin tưởng tài liệu nhiều hơn, phù hợp với truy vấn dài; giá trị thấp dựa nhiều vào thống kê toàn cục, phù hợp với truy vấn ngắn.
+
+% ---------------------------------------------------------------------------
+\subsection{Query Likelihood Model --- Dirichlet Prior Smoothing}
+% ---------------------------------------------------------------------------
+
+Phương pháp Dirichlet Prior coi mô hình tập dữ liệu như tiên nghiệm (prior) Dirichlet và cập nhật bằng bằng chứng từ tài liệu. Công thức:
+\begin{equation}
+P(t|D) = \frac{f_{t,D} + \mu \cdot P(t|C)}{|D| + \mu}
+\end{equation}
+
+Tham số $\mu > 0$ đóng vai trò trọng số của tiên nghiệm. Khi $\mu$ lớn, mô hình dựa nhiều vào thống kê toàn cục, phù hợp cho tài liệu ngắn. Khi $\mu$ nhỏ, mô hình dựa chủ yếu vào nội dung tài liệu. Một đặc điểm của Dirichlet so với Jelinek-Mercer là mức độ làm trơn tự động giảm theo độ dài tài liệu, vì $|D|$ xuất hiện ở mẫu số.
+
+% ---------------------------------------------------------------------------
+\subsection{K-gram Index và Khoảng cách Levenshtein}
+% ---------------------------------------------------------------------------
+
+K-gram index hỗ trợ tìm kiếm chịu lỗi (tolerant retrieval). Mỗi term trong từ vựng được phân tách thành các chuỗi con có độ dài $k$ (mặc định $k = 2$, tức bigram), kèm ký tự đánh dấu \texttt{\$} ở đầu và cuối. Ví dụ, term ``flow'' sinh ra các bigram: \texttt{\$f}, \texttt{fl}, \texttt{lo}, \texttt{ow}, \texttt{w\$}.
+
+Khi nhận một từ không có trong từ vựng, hệ thống:
+\begin{enumerate}
+    \item Sinh các k-gram của từ cần sửa.
+    \item Tra K-gram index để tìm các term ứng viên có hệ số Jaccard đủ lớn.
+    \item Tính khoảng cách Levenshtein giữa từ cần sửa và mỗi ứng viên.
+    \item Chọn ứng viên có khoảng cách nhỏ nhất (tối đa 2).
+\end{enumerate}
+
+Khoảng cách Levenshtein đo số phép chỉnh sửa tối thiểu (chèn, xóa, thay thế) cần thiết để biến đổi một chuỗi thành chuỗi khác. Thuật toán được cài đặt bằng quy hoạch động với độ phức tạp $O(m \times n)$.
+
+% ---------------------------------------------------------------------------
+\subsection{Các metric đánh giá}
+% ---------------------------------------------------------------------------
+
+Năm metric được sử dụng để đánh giá hiệu suất:
+
+\textbf{Precision at K (P@K):} tỉ lệ tài liệu liên quan trong top-K kết quả.
+\begin{equation}
+P@K = \frac{|\{\text{tài liệu liên quan trong top-}K\}|}{K}
+\end{equation}
+
+\textbf{Recall at K (R@K):} tỉ lệ tài liệu liên quan được tìm thấy so với tổng số tài liệu liên quan.
+\begin{equation}
+R@K = \frac{|\{\text{tài liệu liên quan trong top-}K\}|}{|\text{tất cả tài liệu liên quan}|}
+\end{equation}
+
+\textbf{F1-Score at K:} trung bình điều hòa của P@K và R@K.
+\begin{equation}
+F1@K = \frac{2 \cdot P@K \cdot R@K}{P@K + R@K}
+\end{equation}
+
+\textbf{Mean Average Precision (MAP):} trung bình của Average Precision trên tất cả truy vấn.
+\begin{equation}
+\text{MAP} = \frac{1}{|Q|} \sum_{q \in Q} \text{AP}(q), \quad \text{AP}(q) = \frac{1}{|\text{Rel}_q|} \sum_{k=1}^{n} P@k \cdot \text{rel}(k)
+\end{equation}
+
+\textbf{Mean Reciprocal Rank (MRR):} trung bình nghịch đảo hạng của tài liệu liên quan đầu tiên.
+\begin{equation}
+\text{MRR} = \frac{1}{|Q|} \sum_{q \in Q} \frac{1}{\text{rank}_q}
+\end{equation}
+
+% ===========================================================================
+\section{Thiết kế hệ thống}
+% ===========================================================================
+
+% ---------------------------------------------------------------------------
+\subsection{Cấu trúc dự án}
+% ---------------------------------------------------------------------------
+
+Dự án được tổ chức thành các module riêng biệt nhằm tách biệt phần thuật toán lõi, phần đánh giá, và phần giao diện. Thư mục \texttt{core/} chứa bốn module chính: \texttt{indexer.py} đảm nhận tiền xử lý văn bản và xây dựng chỉ mục; \texttt{models.py} cài đặt bốn mô hình xếp hạng; \texttt{spellcheck.py} xử lý sửa lỗi chính tả; và \texttt{metrics.py} tính toán các metric đánh giá.
+
+Bộ dữ liệu Cranfield được tải tự động thông qua thư viện \texttt{ir\_datasets} và lưu cache dưới dạng JSON trong thư mục \texttt{data/cranfield/} để tăng tốc lần tải tiếp theo.
+
+% ---------------------------------------------------------------------------
+\subsection{Pipeline tiền xử lý}
+% ---------------------------------------------------------------------------
+
+Quá trình tiền xử lý được chuẩn hóa và áp dụng thống nhất cho cả tài liệu lẫn truy vấn. Các bước bao gồm: chuyển chữ thường, tách từ bằng biểu thức chính quy \texttt{[a-z0-9]+}, loại bỏ từ dừng (sử dụng danh sách 179 từ dừng tiếng Anh từ NLTK), và rút gọn gốc từ bằng thuật toán Porter Stemmer. Tính nhất quán của pipeline này đảm bảo rằng term trong truy vấn khớp chính xác với term trong chỉ mục.
+
+% ---------------------------------------------------------------------------
+\subsection{Giao diện Streamlit}
+% ---------------------------------------------------------------------------
+
+Giao diện được chia thành hai phần: thanh bên (sidebar) chứa bảng điều khiển cho phép chọn mô hình, điều chỉnh tham số qua thanh trượt, và bật/tắt sửa lỗi chính tả; phần chính hiển thị ô tìm kiếm, gợi ý sửa lỗi, và danh sách kết quả dưới dạng thẻ. Giá trị mặc định của các thanh trượt được lấy từ kết quả tinh chỉnh siêu tham số.
+
+% ===========================================================================
+\section{Thực nghiệm và kết quả}
+% ===========================================================================
+
+% ---------------------------------------------------------------------------
+\subsection{Đánh giá với tham số mặc định}
+% ---------------------------------------------------------------------------
+
+Bảng~\ref{tab:baseline} trình bày kết quả đánh giá bốn mô hình với tham số tối ưu (sau Grid Search) trên toàn bộ 225 truy vấn. Kết quả truy xuất top 100, metric được tính tại $K = 10$.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Mô hình} & \textbf{P@10} & \textbf{R@10} & \textbf{F1@10} & \textbf{MAP} & \textbf{MRR} \\
+\midrule
+TF-IDF             & 0.3053 & 0.4487 & 0.3368 & 0.4097 & 0.8061 \\
+BM25               & 0.3191 & 0.4573 & 0.3482 & 0.4330 & 0.8292 \\
+QLM (JM)           & 0.2996 & 0.4405 & 0.3306 & 0.4061 & 0.8091 \\
+QLM (Dirichlet)    & 0.2991 & 0.4359 & 0.3287 & 0.4064 & 0.8075 \\
+\bottomrule
+\end{tabular}
+\caption{Kết quả đánh giá với tham số tối ưu ($K = 10$). BM25: $k_1 = 2.0, b = 0.75$; QLM-JM: $\lambda = 0.3$; QLM-Dirichlet: $\mu = 250$.}
+\label{tab:baseline}
+\end{table}
+
+BM25 đạt MAP cao nhất (0.4330) và MRR cao nhất (0.8292), cho thấy mô hình này xếp hạng tài liệu liên quan ở vị trí cao hơn các mô hình còn lại. TF-IDF có hiệu suất gần tương đương QLM trên bộ dữ liệu này, đạt MAP 0.4097. Hai biến thể QLM cho kết quả tương tự nhau, với MAP xấp xỉ 0.406.
+
+% ---------------------------------------------------------------------------
+\subsection{Tinh chỉnh siêu tham số}
+% ---------------------------------------------------------------------------
+
+Siêu tham số của ba mô hình (BM25, QLM-JM, QLM-Dirichlet) được tinh chỉnh bằng Grid Search, tối ưu theo MAP trên toàn bộ 225 truy vấn. Kết quả cho thấy BM25 đạt MAP cao nhất tại $k_1 = 2.0$ và $b = 0.75$. QLM Jelinek-Mercer tối ưu tại $\lambda = 0.3$, cho thấy mô hình ưu tiên thông tin từ toàn bộ tập dữ liệu hơn là từ tài liệu đơn lẻ. QLM Dirichlet đạt hiệu suất tốt nhất tại $\mu = 250$, một giá trị tương đối nhỏ phù hợp với tập tài liệu có độ dài trung bình khoảng 103 token.
+
+Hình~\ref{fig:bm25_heatmap} biểu diễn MAP của BM25 theo lưới $k_1 \times b$. Có thể quan sát rằng hiệu suất thay đổi đáng kể theo cả hai tham số. Vùng tối ưu nằm ở khoảng giá trị trung bình của $b$ và $k_1$ vừa phải.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/bm25_heatmap.png}
+\caption{BM25 --- MAP theo Grid Search ($k_1 \times b$).}
+\label{fig:bm25_heatmap}
+\end{figure}
+
+Hình~\ref{fig:qlm_jm} và Hình~\ref{fig:qlm_dir} lần lượt biểu diễn MAP khi thay đổi $\lambda$ (Jelinek-Mercer) và $\mu$ (Dirichlet).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/qlm_jm_lambda.png}
+\caption{QLM Jelinek-Mercer --- MAP theo $\lambda$.}
+\label{fig:qlm_jm}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/qlm_dirichlet_mu.png}
+\caption{QLM Dirichlet --- MAP theo $\mu$.}
+\label{fig:qlm_dir}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\subsection{So sánh sau tinh chỉnh}
+% ---------------------------------------------------------------------------
+
+Hình~\ref{fig:comparison} so sánh hiệu suất của bốn mô hình sau khi áp dụng tham số tối ưu.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/model_comparison_optimal.png}
+\caption{So sánh hiệu suất các mô hình với tham số tối ưu.}
+\label{fig:comparison}
+\end{figure}
+
+% ===========================================================================
+\section{Tolerant Retrieval}
+% ===========================================================================
+
+Thí nghiệm đánh giá hiệu quả module sửa lỗi chính tả. Mười truy vấn được chọn và viết sai chính tả có chủ đích (ví dụ ``aerodynamics'' thành ``aerodinamics'', ``boundary'' thành ``boundry''). Mỗi truy vấn được chạy qua hệ thống ở hai chế độ: tắt sửa lỗi (truy vấn sai được sử dụng trực tiếp) và bật sửa lỗi (truy vấn được sửa trước khi tìm kiếm).
+
+Hình~\ref{fig:tolerant} cho thấy sự khác biệt giữa ba điều kiện: truy vấn gốc (chuẩn), truy vấn sai không sửa, và truy vấn sai có sửa. Khi truy vấn bị sai chính tả và không được sửa, các metric giảm đáng kể do nhiều term không được tìm thấy trong chỉ mục. Sau khi bật module sửa lỗi, hiệu suất phục hồi, mặc dù có thể không đạt mức ban đầu do một số từ được sửa không hoàn toàn chính xác.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/tolerant_comparison.png}
+\caption{So sánh hiệu suất: truy vấn gốc, sai (không sửa), sai (có sửa).}
+\label{fig:tolerant}
+\end{figure}
+
+Hình~\ref{fig:tolerant_pq} phân tích chi tiết Average Precision cho từng truy vấn trong cả ba điều kiện.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/tolerant_per_query.png}
+\caption{Average Precision theo từng truy vấn.}
+\label{fig:tolerant_pq}
+\end{figure}
+
+% ===========================================================================
+\section{Kết luận}
+% ===========================================================================
+
+Báo cáo đã trình bày quá trình xây dựng, đánh giá, và tinh chỉnh một hệ thống tìm kiếm thông tin trên bộ dữ liệu Cranfield. Bốn mô hình xếp hạng được cài đặt và so sánh, trong đó các mô hình xác suất (BM25 và QLM) thể hiện hiệu suất cao hơn so với TF-IDF cơ bản. Quá trình tinh chỉnh siêu tham số bằng Grid Search giúp tìm ra cấu hình phù hợp nhất cho từng mô hình. Module sửa lỗi chính tả dựa trên K-gram index và khoảng cách Levenshtein cho thấy khả năng phục hồi hiệu suất khi truy vấn bị viết sai. Tất cả các thành phần được tích hợp vào giao diện Streamlit, tạo thành hệ thống tìm kiếm hoàn chỉnh và dễ sử dụng.
+
+\end{document}
